@@ -2,55 +2,47 @@ import os
 for filename in os.listdir("InstanciasSAT/"):
     print('Translating file: ' + filename)
 
-    zincified = ''
-    variables = []
+    comments = ''
+    nvar = 0
+    nclauses = 0
+    clauses = []
     readpath = 'InstanciasSAT/' + filename
     enunciado = open(readpath, "r")
-
+    
     for linea in enunciado:
         line = linea.lstrip()
-        
         if line.strip():
             if line[0] == 'c':
-                zincified += '%' + line[1:]
+                comments += line[0:]
+
             elif line[0] == 'p':
                 words = line.split()
                 if words[1] != 'cnf':
-                    print('Error en el formato del archivo (no es cnf)')
+                    print('El archivo no es cnf!!')
                     exit()
+
                 else:
-                    numvar = int(words[2])
-                    numclause = int(words[3])
-                    for x in range(numvar):
-                        variables.append('X' + str(x))
-                    for var in variables:
-                        zincified += 'var 0..1: ' + var + '; var 0..1: n_' + var + ';\n'
-                    zincified += '\n'
-                    for var in variables:
-                        zincified += 'constraint ' + var + ' + ' +  'n_' + var + ' = 1;\n'
+                    nvar = int(words[2])
+                    nclauses = int(words[3])
+
             else:
-                try:
-                    clause = []
-                    words = line.split()
-                    for var in words:
-                        variable = int(var)
-                        literal = variables[abs(variable) - 1]
-                        if variable < 0:
-                            clause.append('n_' + str(literal))
-                        elif variable > 0:
-                            clause.append(str(literal))
-                    zincified += '\nconstraint ' + str(clause[0])
-                    for element in clause[1:]:
-                        zincified += ' + ' + str(element)
-                    zincified += '>= 1;'
-                except:
-                    continue
+                clause = []
+                words = line.split()
+                for var in words:
+                    variable = int(var)
+                    clause.append(variable)
+                clause.pop()
+                clauses.append(clause)
+
+                       
+                
     enunciado.close()
-    zincified += '\n\nsolve satisfy;\n\noutput ['
-    for i in range(0, len(variables), 2):
-        zincified += '"\\n' + str(variables[i]) + '=", show(' + str(variables[i]) + '), "\\t -' + str(variables[i]) + '=", show(n_' + str(variables[i]) + '), '
-    zincified += '];'
-    writepath = 'InstanciasMiniZinc/' + str(filename[:-4]) + '.mzn'
+    print (comments)
+    zincified = ""
+    for i in range(0, len(clauses)):
+        zincified += '\n' + " ".join(str(x) for x in clauses[i]) + " 0"
+
+    writepath = 'X-SAT/' + str(filename[:-4]) + '.cnf'
     zincfile = open(writepath, "w")
     zincfile.write(zincified)
     zincfile.close
